@@ -1,0 +1,25 @@
+# Simple Build Tool
+project/boot
+project/target
+target
+
+# Eclipse
+.project
+.classpath
+.settings
+.metadata
+.history
+Servers
+bin
+.scala_dependencies
+
+# Mac OSX
+.DS_Store
+
+# Vi
+*.swp
+*.un~
+
+# TextMate
+*.tmproj
+tmtags
