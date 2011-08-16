@@ -11,6 +11,11 @@ Depend on the plugin: `./project/plugins/build.sbt`
 
     libraryDependencies += "com.github.stefri" %% "sbt-antlr" % "0.1-SNAPSHOT"
 
+Place your ANTLR3 grammar files in `src/main/antlr3` and they will be
+included in your next build. Note, `sbt-antlr` generates the source code
+only once as long as your grammar file didn't change it does not
+re-generate the java source files.
+
 
 ## Include Plugin Settings
 
