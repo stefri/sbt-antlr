@@ -13,13 +13,13 @@ object BuildSbtAntlr extends Build {
     import Dependencies._
 
     val sbtAntlr = Project(
-        id   = "sbt-antlr",
+        id = "sbt-antlr",
         base = file("."),
 
         settings = Defaults.defaultSettings ++ Seq(
-            organization  := "com.github.stefri",
-            version       := "0.1-SNAPSHOT",
-            sbtPlugin     := true,
+            organization := "com.github.stefri",
+            version := "0.1-SNAPSHOT",
+            sbtPlugin := true,
 
             scalacOptions := Seq("-deprecation", "-unchecked"),
 
@@ -28,9 +28,9 @@ object BuildSbtAntlr extends Build {
             publishTo <<= (version) { (v: String) =>
                 val repoSuffix = if (v.contains("-SNAPSHOT")) "snapshots" else "releases"
                 val resolver = Resolver.file("gh-pages",
-                        new File("/Users/steffen/dev/stefri.github.com/repo", repoSuffix))
+                    new File("/Users/steffen/dev/stefri.github.com/repo", repoSuffix))
                 Some(resolver)
             }
         )
-    ) 
+    )
 }
