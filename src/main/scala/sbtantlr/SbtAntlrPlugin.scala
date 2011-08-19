@@ -21,98 +21,106 @@ import Process._
 import Keys._
 import org.antlr.Tool
 import scala.collection.JavaConversions._
+import Project.Initialize
 
 object SbtAntlrPlugin extends Plugin {
-
-    final case class AntlrConfiguration(
-        report: Boolean,
-        printGrammar: Boolean,
-        debug: Boolean,
-        profile: Boolean,
-        nfa: Boolean,
-        dfa: Boolean,
-        trace: Boolean,
-        messageFormat: String,
-        verbose: Boolean,
-        maxSwitchCaseLabels: Int,
-        minSwitchAlts: Int)
-
-    val antlrConfig         = config("antlr")
-    val generate            = TaskKey[Seq[File]]("generate")
-    val antlrConfiguration  = TaskKey[AntlrConfiguration]("antlr-configuration")
-    val report              = SettingKey[Boolean]("report")
-    val printGrammar        = SettingKey[Boolean]("print-grammar")
-    val debug               = SettingKey[Boolean]("debug")
-    val profile             = SettingKey[Boolean]("profile")
-    val nfa                 = SettingKey[Boolean]("nfa")
-    val dfa                 = SettingKey[Boolean]("dfa")
-    val trace               = SettingKey[Boolean]("trace")
-    val messageFormat       = SettingKey[String]("message-format")
-    val verbose             = SettingKey[Boolean]("verbose")
-    val maxSwitchCaseLabels = SettingKey[Int]("max-switch-case-lables")
-    val minSwitchAlts       = SettingKey[Int]("min-switch-alts")
-
-    lazy val antlrSettings: Seq[Setting[_]] = inConfig(antlrConfig)(Seq[Setting[_]](
-        sourceDirectory     <<= (sourceDirectory in Compile) { _ / "antlr3" },
-        javaSource          <<= (sourceManaged in Compile) { _ / "antlr3" },
-        version             := "3.3",
-        report              := false,
-        printGrammar        := false,
-        debug               := false,
-        profile             := false,
-        nfa                 := false,
-        dfa                 := false,
-        trace               := false,
-        verbose             := false,
-        messageFormat       := "antlr",
-        maxSwitchCaseLabels := 300,
-        minSwitchAlts       := 3,
-
-        managedClasspath    <<= (classpathTypes in antlrConfig, update) map { (ct, report) =>
-            Classpaths.managedJars(antlrConfig, ct, report)
-        },
-        antlrConfiguration  <<= antlrConfigurationTask,
-        generate            <<= sourceGeneratorTask
-    )) ++ Seq[Setting[_]](
-        sourceGenerators in Compile <+= (generate in antlrConfig).identity,
-        cleanFiles <+= (javaSource in antlrConfig).identity,
-        libraryDependencies <+= (version in antlrConfig)("org.antlr" % "antlr" % _),
-        ivyConfigurations += antlrConfig
+    
+    sealed trait TargetLanguage { def id: String; def suffix: String }
+    case object JAVA  extends TargetLanguage { val id = "java"; val suffix = ".java" }
+    case object SCALA extends TargetLanguage { val id = "scala"; val suffix = ".scala" }
+    
+    
+    final case class AntlrToolConfiguration(
+        report: Boolean         = false,
+        printGrammar: Boolean   = false,
+        debug: Boolean          = false,
+        profile: Boolean        = false,
+        nfa: Boolean            = false,
+        dfa: Boolean            = false,
+        trace: Boolean          = false,
+        messageFormat: String   = "antlr",
+        verbose: Boolean        = false
+    )
+        
+        
+    final case class AntlrGeneratorConfiguration(
+        maxSwitchCaseLabels: Int    = 300,
+        minSwitchAlts: Int          = 3
+    )
+        
+    final case class PluginConfiguration(
+        grammarSuffix: String           = ".g",
+        targetLanguage: TargetLanguage  = JAVA
     )
 
-    private def antlrConfigurationTask = (report, printGrammar, debug, profile, nfa, dfa, trace, verbose, messageFormat) map {
-        (report, printGrammar, debug, profile, nfa, dfa, trace, verbose, messageFormat) =>
-            AntlrConfiguration(report, printGrammar, debug, profile, nfa, dfa, trace, messageFormat, verbose, 300, 3)
-    }
+    val Antlr                   = config("antlr")
+    val generate                = TaskKey[Seq[File]]("generate")
+    val antlrDependency         = SettingKey[ModuleID]("antlr-dependency")
+    val toolConfiguration       = SettingKey[AntlrToolConfiguration]("antlr-tool-configuration")
+    val generatorConfiguration  = SettingKey[AntlrGeneratorConfiguration]("antlr-generator-configuration")
+    val pluginConfiguration     = SettingKey[PluginConfiguration]("plugin-configuration")
 
-    private def sourceGeneratorTask = (streams, sourceDirectory in antlrConfig, javaSource in antlrConfig, antlrConfiguration in antlrConfig, cacheDirectory) map {
-        (out, srcDir, targetDir, options, cache) =>
+    lazy val antlrSettings: Seq[Project.Setting[_]] = inConfig(Antlr)(Seq(
+        toolConfiguration       :=  AntlrToolConfiguration(),
+        generatorConfiguration  :=  AntlrGeneratorConfiguration(),
+        pluginConfiguration     :=  PluginConfiguration(),
+        
+        sourceDirectory         <<= (sourceDirectory in Compile) { _ / "antlr3" },
+        javaSource              <<= (sourceManaged in Compile) { _ / "antlr3" },
+
+        managedClasspath        <<= (classpathTypes in Antlr, update) map { (ct, report) =>
+            Classpaths.managedJars(Antlr, ct, report)
+        },
+        
+        generate                <<= sourceGeneratorTask
+        
+    )) ++ Seq(
+        sourceGenerators in Compile <+= (generate in Antlr).identity,
+        cleanFiles                  <+= (javaSource in Antlr).identity,
+        libraryDependencies         <+= (version in Antlr)("org.antlr" % "antlr" % _),
+        ivyConfigurations           +=  Antlr
+    ) 
+
+    
+    private def sourceTargetTask = (pluginConfiguration in Antlr) map {
+        (config) => config.targetLanguage match {
+            case JAVA =>
+                javaSource      <<= (sourceManaged in Compile) { _ / "antlr3" }
+            case SCALA =>
+                scalaSource     <<= (sourceManaged in Compile) { _ / "antlr3" }
+        }       
+    }
+    
+    private def sourceGeneratorTask = (streams, sourceDirectory in Antlr, javaSource in Antlr, 
+            toolConfiguration in Antlr, generatorConfiguration in Antlr, pluginConfiguration in Antlr, cacheDirectory) map {
+        (out, srcDir, targetDir, tool, gen, options, cache) =>
             val cachedCompile = FileFunction.cached(cache / "antlr3", inStyle = FilesInfo.lastModified, outStyle = FilesInfo.exists) { (in: Set[File]) =>
-                generateWithAntlr(srcDir, targetDir, options, out.log)
+                generateWithAntlr(srcDir, targetDir, tool, gen, options, out.log)
             }
-            cachedCompile((srcDir ** "*.g").get.toSet).toSeq
+            cachedCompile((srcDir ** options.grammarSuffix).get.toSet).toSeq
     }
 
-    private def generateWithAntlr(srcDir: File, target: File, options: AntlrConfiguration, log: Logger) = {
-        printAntlrOptions(log, options)
+    private def generateWithAntlr(srcDir: File, target: File, tool: AntlrToolConfiguration, 
+            gen: AntlrGeneratorConfiguration, options: PluginConfiguration, log: Logger) = {
+        printAntlrOptions(log, tool, gen)
 
         // prepare target
         target.mkdirs()
 
         // configure antlr tool
         val antlr = new Tool
-        log.info("Using ANTLR version %s to generate java source files.".format(antlr.VERSION))
-        antlr.setDebug(options.debug)
-        antlr.setGenerate_DFA_dot(options.dfa)
-        antlr.setGenerate_NFA_dot(options.nfa)
-        antlr.setProfile(options.profile)
-        antlr.setReport(options.report)
-        antlr.setPrintGrammar(options.printGrammar)
-        antlr.setTrace(options.trace)
-        antlr.setVerbose(options.verbose)
-        antlr.setMessageFormat(options.messageFormat)
-        antlr.setMaxSwitchCaseLabels(options.maxSwitchCaseLabels)
-        antlr.setMinSwitchAlts(options.minSwitchAlts)
+        log.info("Using ANTLR version %s to generate source files.".format(antlr.VERSION))
+        antlr.setDebug(tool.debug)
+        antlr.setGenerate_DFA_dot(tool.dfa)
+        antlr.setGenerate_NFA_dot(tool.nfa)
+        antlr.setProfile(tool.profile)
+        antlr.setReport(tool.report)
+        antlr.setPrintGrammar(tool.printGrammar)
+        antlr.setTrace(tool.trace)
+        antlr.setVerbose(tool.verbose)
+        antlr.setMessageFormat(tool.messageFormat)
+        antlr.setMaxSwitchCaseLabels(gen.maxSwitchCaseLabels)
+        antlr.setMinSwitchAlts(gen.minSwitchAlts)
 
         // propagate source and target path to antlr
         antlr.setInputDirectory(srcDir.getPath)
@@ -126,8 +134,8 @@ object SbtAntlrPlugin extends Plugin {
         antlr.setMake(true)
 
         // process grammars
-        val grammars = (srcDir ** "*.g").get
-        log.info("Generating java source files for %d found ANTLR3 grammars.".format(grammars.size))
+        val grammars = (srcDir ** options.grammarSuffix).get
+        log.info("Generating source files for %d found ANTLR3 grammars.".format(grammars.size))
 
         // add each grammar file into the antlr tool's list of grammars to process
         grammars foreach { g =>
@@ -142,21 +150,21 @@ object SbtAntlrPlugin extends Plugin {
             log.error("ANTLR caught %d build errors.".format(antlr.getNumErrors))
         }
 
-        (target ** "*.java").get.toSet
+        (target ** options.targetLanguage.suffix).get.toSet
     }
 
-    private def printAntlrOptions(log: Logger, options: AntlrConfiguration) {
-        log.info("ANTLR: report              : " + options.report);
-        log.info("ANTLR: printGrammar        : " + options.printGrammar);
-        log.info("ANTLR: debug               : " + options.debug);
-        log.info("ANTLR: profile             : " + options.profile);
-        log.info("ANTLR: nfa                 : " + options.nfa);
-        log.info("ANTLR: dfa                 : " + options.dfa);
-        log.info("ANTLR: trace               : " + options.trace);
-        log.info("ANTLR: messageFormat       : " + options.messageFormat);
-        log.info("ANTLR: maxSwitchCaseLabels : " + options.maxSwitchCaseLabels);
-        log.info("ANTLR: minSwitchAlts       : " + options.minSwitchAlts);
-        log.info("ANTLR: verbose             : " + options.verbose);
+    private def printAntlrOptions(log: Logger, options: AntlrToolConfiguration, gen: AntlrGeneratorConfiguration) {
+        log.debug("ANTLR: report              : " + options.report)
+        log.debug("ANTLR: printGrammar        : " + options.printGrammar)
+        log.debug("ANTLR: debug               : " + options.debug)
+        log.debug("ANTLR: profile             : " + options.profile)
+        log.debug("ANTLR: nfa                 : " + options.nfa)
+        log.debug("ANTLR: dfa                 : " + options.dfa)
+        log.debug("ANTLR: trace               : " + options.trace)
+        log.debug("ANTLR: messageFormat       : " + options.messageFormat)
+        log.debug("ANTLR: maxSwitchCaseLabels : " + gen.maxSwitchCaseLabels)
+        log.debug("ANTLR: minSwitchAlts       : " + gen.minSwitchAlts)
+        log.debug("ANTLR: verbose             : " + options.verbose)
     }
 
 }
