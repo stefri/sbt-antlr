@@ -55,31 +55,46 @@ object SbtAntlrPlugin extends Plugin {
 
     val Antlr                   = config("antlr")
     val generate                = TaskKey[Seq[File]]("generate")
+    val copyTokens              = TaskKey[Seq[File]]("copy-tokens")
     val antlrDependency         = SettingKey[ModuleID]("antlr-dependency")
     val toolConfiguration       = SettingKey[AntlrToolConfiguration]("antlr-tool-configuration")
     val generatorConfiguration  = SettingKey[AntlrGeneratorConfiguration]("antlr-generator-configuration")
     val pluginConfiguration     = SettingKey[PluginConfiguration]("plugin-configuration")
+    val tokensResource            = SettingKey[File]("tokens-resource-directory")
 
     lazy val antlrSettings: Seq[Project.Setting[_]] = inConfig(Antlr)(Seq(
         toolConfiguration       :=  AntlrToolConfiguration(),
         generatorConfiguration  :=  AntlrGeneratorConfiguration(),
         pluginConfiguration     :=  PluginConfiguration(),
+        antlrDependency         := "org.antlr" % "antlr" % "3.3",
         
         sourceDirectory         <<= (sourceDirectory in Compile) { _ / "antlr3" },
         javaSource              <<= (sourceManaged in Compile) { _ / "antlr3" },
+        tokensResource          <<= (sourceManaged in Compile) { _ / "antlr3" },
 
         managedClasspath        <<= (classpathTypes in Antlr, update) map { (ct, report) =>
             Classpaths.managedJars(Antlr, ct, report)
         },
         
-        generate                <<= sourceGeneratorTask
+        generate                <<= sourceGeneratorTask,
+        copyTokens              <<= copyTokensTask
         
     )) ++ Seq(
-        sourceGenerators in Compile <+= (generate in Antlr).identity,
-        cleanFiles                  <+= (javaSource in Antlr).identity,
-        libraryDependencies         <+= (version in Antlr)("org.antlr" % "antlr" % _),
-        ivyConfigurations           +=  Antlr
+        sourceGenerators in Compile     <+= (generate in Antlr).identity,
+        resourceGenerators in Compile   <+= (copyTokens in Antlr).identity,
+        cleanFiles                      <+= (javaSource in Antlr).identity,
+        libraryDependencies             <+= (antlrDependency in Antlr).identity,
+        ivyConfigurations               +=  Antlr
     ) 
+    
+    private def copyTokensTask = (streams, tokensResource in Antlr) map {
+        (out, srcDir) =>
+            val tokens = ((srcDir ** ("*.tokens")).get.toSet).toSeq
+            tokens foreach { t =>
+                out.log.debug("ANTLR: Copying token file %s" format (t))
+            }
+            tokens
+    }
     
     private def sourceGeneratorTask = (streams, sourceDirectory in Antlr, javaSource in Antlr, 
             toolConfiguration in Antlr, generatorConfiguration in Antlr, pluginConfiguration in Antlr, cacheDirectory) map {
@@ -87,7 +102,7 @@ object SbtAntlrPlugin extends Plugin {
             val cachedCompile = FileFunction.cached(cache / "antlr3", inStyle = FilesInfo.lastModified, outStyle = FilesInfo.exists) { (in: Set[File]) =>
                 generateWithAntlr(srcDir, targetDir, tool, gen, options, out.log)
             }
-            cachedCompile((srcDir ** options.grammarSuffix).get.toSet).toSeq
+            cachedCompile((srcDir ** ("*" + options.grammarSuffix)).get.toSet).toSeq
     }
 
     private def generateWithAntlr(srcDir: File, target: File, tool: AntlrToolConfiguration, 
@@ -99,7 +114,7 @@ object SbtAntlrPlugin extends Plugin {
 
         // configure antlr tool
         val antlr = new Tool
-        log.info("Using ANTLR version %s to generate source files.".format(antlr.VERSION))
+        log.info("ANTLR: Using ANTLR version %s to generate source files.".format(antlr.VERSION))
         antlr.setDebug(tool.debug)
         antlr.setGenerate_DFA_dot(tool.dfa)
         antlr.setGenerate_NFA_dot(tool.nfa)
@@ -124,23 +139,23 @@ object SbtAntlrPlugin extends Plugin {
         antlr.setMake(true)
 
         // process grammars
-        val grammars = (srcDir ** options.grammarSuffix).get
-        log.info("Generating source files for %d found ANTLR3 grammars.".format(grammars.size))
+        val grammars = (srcDir ** ("*" + options.grammarSuffix)).get
+        log.info("ANTLR: Generating source files for %d found ANTLR3 grammars.".format(grammars.size))
 
         // add each grammar file into the antlr tool's list of grammars to process
         grammars foreach { g =>
             val relPath = g relativeTo srcDir
-            log.info("Grammar file '%s' detected.".format(relPath.get.getPath))
+            log.info("ANTLR: Grammar file '%s' detected.".format(relPath.get.getPath))
             antlr.addGrammarFile(relPath.get.getPath)
         }
 
         // process all grammars
         antlr.process
         if (antlr.getNumErrors > 0) {
-            log.error("ANTLR caught %d build errors.".format(antlr.getNumErrors))
+            log.error("ANTLR: Caught %d build errors.".format(antlr.getNumErrors))
         }
 
-        (target ** options.targetLanguage.suffix).get.toSet
+        (target ** ("*" + options.targetLanguage.suffix)).get.toSet
     }
 
     private def printAntlrOptions(log: Logger, options: AntlrToolConfiguration, gen: AntlrGeneratorConfiguration) {
