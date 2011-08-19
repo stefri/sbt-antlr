@@ -80,16 +80,6 @@ object SbtAntlrPlugin extends Plugin {
         libraryDependencies         <+= (version in Antlr)("org.antlr" % "antlr" % _),
         ivyConfigurations           +=  Antlr
     ) 
-
-    
-    private def sourceTargetTask = (pluginConfiguration in Antlr) map {
-        (config) => config.targetLanguage match {
-            case JAVA =>
-                javaSource      <<= (sourceManaged in Compile) { _ / "antlr3" }
-            case SCALA =>
-                scalaSource     <<= (sourceManaged in Compile) { _ / "antlr3" }
-        }       
-    }
     
     private def sourceGeneratorTask = (streams, sourceDirectory in Antlr, javaSource in Antlr, 
             toolConfiguration in Antlr, generatorConfiguration in Antlr, pluginConfiguration in Antlr, cacheDirectory) map {
