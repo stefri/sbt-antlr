@@ -140,7 +140,7 @@ object SbtAntlrPlugin extends Plugin {
 
         // process grammars
         val grammars = (srcDir ** ("*" + options.grammarSuffix)).get
-        log.info("ANTLR: Generating source files for %d found ANTLR3 grammars.".format(grammars.size))
+        log.info("ANTLR: Generating source files for %d grammars.".format(grammars.size))
 
         // add each grammar file into the antlr tool's list of grammars to process
         grammars foreach { g =>
