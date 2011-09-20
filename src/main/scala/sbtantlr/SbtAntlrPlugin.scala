@@ -80,10 +80,10 @@ object SbtAntlrPlugin extends Plugin {
         copyTokens              <<= copyTokensTask
         
     )) ++ Seq(
-        sourceGenerators in Compile     <+= (generate in Antlr).identity,
-        resourceGenerators in Compile   <+= (copyTokens in Antlr).identity,
-        cleanFiles                      <+= (javaSource in Antlr).identity,
-        libraryDependencies             <+= (antlrDependency in Antlr).identity,
+        sourceGenerators in Compile     <+= (generate in Antlr),
+        resourceGenerators in Compile   <+= (copyTokens in Antlr),
+        cleanFiles                      <+= (javaSource in Antlr),
+        libraryDependencies             <+= (antlrDependency in Antlr),
         ivyConfigurations               +=  Antlr
     ) 
     

@@ -12,6 +12,7 @@ target
 Servers
 bin
 .scala_dependencies
+.cache
 
 # Mac OSX
 .DS_Store

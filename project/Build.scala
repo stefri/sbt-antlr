@@ -18,8 +18,10 @@ object BuildSbtAntlr extends Build {
 
         settings = Defaults.defaultSettings ++ Seq(
             organization := "com.github.stefri",
-            version := "0.1-SNAPSHOT",
+            version := "0.2-SNAPSHOT",
             sbtPlugin := true,
+            
+            publishMavenStyle := false,
 
             scalacOptions := Seq("-deprecation", "-unchecked"),
 
