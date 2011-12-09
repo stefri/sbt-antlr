@@ -21,8 +21,6 @@ object BuildSbtAntlr extends Build {
             version := "0.2-SNAPSHOT",
             sbtPlugin := true,
             
-            publishMavenStyle := false,
-
             scalacOptions := Seq("-deprecation", "-unchecked"),
 
             libraryDependencies ++= commonDeps,

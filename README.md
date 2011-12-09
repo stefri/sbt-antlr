@@ -9,7 +9,7 @@ Depend on the plugin: `./project/plugins/build.sbt`
 
     resolvers += "stefri" at "http://stefri.github.com/repo/snapshots"
 
-    libraryDependencies += "com.github.stefri" %% "sbt-antlr" % "0.1-SNAPSHOT"
+    addSbtPlugin("com.github.stefri" % "sbt-antlr" % "0.2-SNAPSHOT")
 
 Place your ANTLR3 grammar files in `src/main/antlr3` and they will be
 included in your next build. Note, `sbt-antlr` generates the source code
