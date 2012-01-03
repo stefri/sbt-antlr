@@ -64,8 +64,8 @@ object SbtAntlrPlugin extends Plugin {
     antlrDependency := "org.antlr" % "antlr" % "3.3",
 
     sourceDirectory <<= (sourceDirectory in Compile) { _ / "antlr3" },
-    javaSource <<= (sourceManaged in Compile) { _ / "antlr3" },
-    tokensResource <<= (sourceManaged in Compile) { _ / "antlr3" },
+    javaSource <<= sourceManaged in Compile,
+    tokensResource <<= sourceManaged in Compile,
     
     managedClasspath <<= (classpathTypes in Antlr, update) map { (ct, report) =>
       Classpaths.managedJars(Antlr, ct, report)
@@ -75,6 +75,7 @@ object SbtAntlrPlugin extends Plugin {
     copyTokens <<= copyTokensTask
 
   )) ++ Seq(
+    unmanagedSourceDirectories in Compile <+= (sourceDirectory in Antlr),
     sourceGenerators in Compile <+= (generate in Antlr),
     resourceGenerators in Compile <+= (copyTokens in Antlr),
     cleanFiles <+= (javaSource in Antlr),
