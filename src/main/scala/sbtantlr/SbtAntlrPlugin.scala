@@ -61,7 +61,7 @@ object SbtAntlrPlugin extends Plugin {
     toolConfiguration := AntlrToolConfiguration(),
     generatorConfiguration := AntlrGeneratorConfiguration(),
     pluginConfiguration := PluginConfiguration(),
-    antlrDependency := "org.antlr" % "antlr" % "3.3",
+    antlrDependency := "org.antlr" % "antlr" % "3.4",
 
     sourceDirectory <<= (sourceDirectory in Compile) { _ / "antlr3" },
     javaSource <<= sourceManaged in Compile,
