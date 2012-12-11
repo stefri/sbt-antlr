@@ -54,8 +54,8 @@ object SbtAntlrPlugin extends Plugin {
   val antlrDependency = SettingKey[ModuleID]("antlr-dependency")
   val toolConfiguration = SettingKey[AntlrToolConfiguration]("antlr-tool-configuration")
   val generatorConfiguration = SettingKey[AntlrGeneratorConfiguration]("antlr-generator-configuration")
-  val pluginConfiguration = SettingKey[PluginConfiguration]("plugin-configuration")
-  val tokensResource = SettingKey[File]("tokens-resource-directory")
+  val pluginConfiguration = SettingKey[PluginConfiguration]("antlr-plugin-configuration")
+  val tokensResource = SettingKey[File]("antlr-tokens-resource-directory")
 
   lazy val antlrSettings: Seq[Project.Setting[_]] = inConfig(Antlr)(Seq(
     toolConfiguration := AntlrToolConfiguration(),
