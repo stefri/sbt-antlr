@@ -52,20 +52,20 @@ object SbtAntlrPlugin extends Plugin {
   val generate = TaskKey[Seq[File]]("generate")
   val copyTokens = TaskKey[Seq[File]]("copy-tokens")
   val antlrDependency = SettingKey[ModuleID]("antlr-dependency")
-  val toolConfiguration = SettingKey[AntlrToolConfiguration]("antlr-tool-configuration")
-  val generatorConfiguration = SettingKey[AntlrGeneratorConfiguration]("antlr-generator-configuration")
-  val pluginConfiguration = SettingKey[PluginConfiguration]("plugin-configuration")
-  val tokensResource = SettingKey[File]("tokens-resource-directory")
+  val antlrToolConfiguration = SettingKey[AntlrToolConfiguration]("antlr-tool-configuration")
+  val antlrGeneratorConfiguration = SettingKey[AntlrGeneratorConfiguration]("antlr-generator-configuration")
+  val antlrPluginConfiguration = SettingKey[PluginConfiguration]("antlr-plugin-configuration")
+  val antlrTokensResource = SettingKey[File]("antlr-tokens-resource-directory")
 
   lazy val antlrSettings: Seq[Project.Setting[_]] = inConfig(Antlr)(Seq(
-    toolConfiguration := AntlrToolConfiguration(),
-    generatorConfiguration := AntlrGeneratorConfiguration(),
-    pluginConfiguration := PluginConfiguration(),
-    antlrDependency := "org.antlr" % "antlr" % "3.3",
+    antlrToolConfiguration := AntlrToolConfiguration(),
+    antlrGeneratorConfiguration := AntlrGeneratorConfiguration(),
+    antlrPluginConfiguration := PluginConfiguration(),
+    antlrDependency := "org.antlr" % "antlr" % "3.4",
 
     sourceDirectory <<= (sourceDirectory in Compile) { _ / "antlr3" },
     javaSource <<= sourceManaged in Compile,
-    tokensResource <<= sourceManaged in Compile,
+    antlrTokensResource <<= sourceManaged in Compile,
     
     managedClasspath <<= (classpathTypes in Antlr, update) map { (ct, report) =>
       Classpaths.managedJars(Antlr, ct, report)
@@ -83,7 +83,7 @@ object SbtAntlrPlugin extends Plugin {
     ivyConfigurations += Antlr
   )
 
-  private def copyTokensTask = (streams, tokensResource in Antlr) map {
+  private def copyTokensTask = (streams, antlrTokensResource in Antlr) map {
     (out, srcDir) =>
       val tokens = ((srcDir ** ("*.tokens")).get.toSet).toSeq
       tokens foreach { t =>
@@ -93,7 +93,7 @@ object SbtAntlrPlugin extends Plugin {
   }
 
   private def sourceGeneratorTask = (streams, sourceDirectory in Antlr, javaSource in Antlr,
-    toolConfiguration in Antlr, generatorConfiguration in Antlr, pluginConfiguration in Antlr, cacheDirectory) map {
+    antlrToolConfiguration in Antlr, antlrGeneratorConfiguration in Antlr, antlrPluginConfiguration in Antlr, cacheDirectory) map {
       (out, srcDir, targetDir, tool, gen, options, cache) =>
         val cachedCompile = FileFunction.cached(cache / "antlr3", inStyle = FilesInfo.lastModified, outStyle = FilesInfo.exists) { (in: Set[File]) =>
           generateWithAntlr(srcDir, targetDir, tool, gen, options, out.log)
