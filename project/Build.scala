@@ -18,7 +18,7 @@ object BuildSbtAntlr extends Build {
 
         settings = Defaults.defaultSettings ++ Seq(
             organization := "com.github.stefri",
-            version := "0.4-SNAPSHOT",
+            version := "0.5",
             sbtPlugin := true,
             
             scalacOptions := Seq("-deprecation", "-unchecked"),
