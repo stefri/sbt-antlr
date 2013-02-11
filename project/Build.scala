@@ -2,7 +2,7 @@ import sbt._
 import Keys._
 
 object Dependencies {
-    val antlr = "org.antlr" % "antlr" % "3.4" % "compile"
+    val antlr = "org.antlr" % "antlr" % "3.5" % "compile"
 
     val commonDeps = Seq(
         antlr
