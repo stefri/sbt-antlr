@@ -1,14 +1,13 @@
 # sbt-antlr
 
-A plugin for sbt-0.11.x and 0.12.0 that generates code based on an antlr
-grammar.
+A plugin for sbt-0.12.x that generates code based on an antlr 3.5 grammar.
 
 
 ## Usage
 
 Depend on the plugin: `./project/plugins/build.sbt`
 
-    resolvers += "stefri" at "http://stefri.github.com/repo/snapshots"
+    resolvers += "stefri" at "http://stefri.github.com/repo/releases"
 
     addSbtPlugin("com.github.stefri" % "sbt-antlr" % "0.5")
 
