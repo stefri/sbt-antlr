@@ -4,9 +4,9 @@ name := "sbt-antlr"
 
 organization := "com.github.stefri"
 
-version := "0.5.1"
+version := "0.5.2"
 
-libraryDependencies += "org.antlr" % "antlr" % "3.5" % "compile"
+libraryDependencies += "org.antlr" % "antlr" % "3.5.2" % "compile"
 
 scalacOptions := Seq("-deprecation", "-unchecked")
 
