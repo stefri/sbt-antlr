@@ -7,9 +7,9 @@ A plugin for sbt-0.12.x that generates code based on an antlr 3.5 grammar.
 
 Depend on the plugin: `./project/plugins/build.sbt`
 
-    resolvers += "stefri" at "http://stefri.github.com/repo/releases"
+    resolvers += "stefri" at "http://stefri.github.io/repo/releases"
 
-    addSbtPlugin("com.github.stefri" % "sbt-antlr" % "0.5")
+    addSbtPlugin("com.github.stefri" % "sbt-antlr" % "0.5.3")
 
 Place your ANTLR3 grammar files in `src/main/antlr3` and they will be
 included in your next build. Note, `sbt-antlr` generates the source code
@@ -45,6 +45,6 @@ start with the antlr generator tool. Moreover, since this was my first
 SBT plugin, some of the already existing code generating SBT plugins
 were used to understand the basics (namely the `sbt-protobuf` and
 `sbt-xjc` plugins).
-  
+
   [1]: https://github.com/harrah/xsbt/wiki/Plugins
   [2]: http://www.apache.org/licenses/LICENSE-2.0.html

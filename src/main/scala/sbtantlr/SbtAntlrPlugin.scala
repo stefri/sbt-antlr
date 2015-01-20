@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Steffen Fritzsche.
+ * Copyright 2011-2015 Steffen Kram.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ object SbtAntlrPlugin extends Plugin {
   val antlrPluginConfiguration = SettingKey[PluginConfiguration]("antlr-plugin-configuration")
   val antlrTokensResource = SettingKey[File]("antlr-tokens-resource-directory")
 
-  lazy val antlrSettings: Seq[Project.Setting[_]] = inConfig(Antlr)(Seq(
+  lazy val antlrSettings: Seq[Def.Setting[_]] = inConfig(Antlr)(Seq(
     antlrToolConfiguration := AntlrToolConfiguration(),
     antlrGeneratorConfiguration := AntlrGeneratorConfiguration(),
     antlrPluginConfiguration := PluginConfiguration(),
@@ -66,7 +66,7 @@ object SbtAntlrPlugin extends Plugin {
     sourceDirectory <<= (sourceDirectory in Compile) { _ / "antlr3" },
     javaSource <<= sourceManaged in Compile,
     antlrTokensResource <<= sourceManaged in Compile,
-    
+
     managedClasspath <<= (classpathTypes in Antlr, update) map { (ct, report) =>
       Classpaths.managedJars(Antlr, ct, report)
     },
@@ -93,9 +93,9 @@ object SbtAntlrPlugin extends Plugin {
   }
 
   private def sourceGeneratorTask = (streams, sourceDirectory in Antlr, javaSource in Antlr,
-    antlrToolConfiguration in Antlr, antlrGeneratorConfiguration in Antlr, antlrPluginConfiguration in Antlr, cacheDirectory) map {
-      (out, srcDir, targetDir, tool, gen, options, cache) =>
-        val cachedCompile = FileFunction.cached(cache / "antlr3", inStyle = FilesInfo.lastModified, outStyle = FilesInfo.exists) { (in: Set[File]) =>
+    antlrToolConfiguration in Antlr, antlrGeneratorConfiguration in Antlr, antlrPluginConfiguration in Antlr) map {
+      (out, srcDir, targetDir, tool, gen, options) =>
+        val cachedCompile = FileFunction.cached(out.cacheDirectory / "antlr3", inStyle = FilesInfo.lastModified, outStyle = FilesInfo.exists) { (in: Set[File]) =>
           generateWithAntlr(srcDir, targetDir, tool, gen, options, out.log)
         }
         cachedCompile((srcDir ** ("*" + options.grammarSuffix)).get.toSet).toSeq
